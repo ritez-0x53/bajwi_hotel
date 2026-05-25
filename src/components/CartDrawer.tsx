@@ -1,19 +1,29 @@
 import { useState } from "react";
-import { X, Plus, Minus, Trash2, MessageCircle, Check } from "lucide-react";
+import { X, Plus, Minus, Trash2, MessageCircle, Check, Truck, Store } from "lucide-react";
 import { useCart } from "@/lib/cart";
-import { currency, RESTAURANT } from "@/lib/config";
-import { whatsappOrderUrl, type CheckoutInfo } from "@/lib/whatsapp";
+import { currency, RESTAURANT, DELIVERY_FEE, FREE_DELIVERY_ABOVE } from "@/lib/config";
+import { whatsappOrderUrl, deliveryFeeFor, type CheckoutInfo, type OrderType } from "@/lib/whatsapp";
 
 export default function CartDrawer() {
   const { lines, total, isOpen, close, setQty, remove, clear, count } = useCart();
   const [checkout, setCheckout] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
-  const [info, setInfo] = useState<CheckoutInfo>({ name: "", phone: "", address: "", note: "" });
+  const [orderType, setOrderType] = useState<OrderType>("delivery");
+  const [info, setInfo] = useState<Omit<CheckoutInfo, "orderType">>({
+    name: "",
+    phone: "",
+    address: "",
+    note: "",
+  });
+
+  const fee = deliveryFeeFor(orderType, total);
+  const grandTotal = total + fee;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!info.name.trim() || !info.phone.trim() || !info.address.trim() || lines.length === 0) return;
-    const url = whatsappOrderUrl(lines, info);
+    if (!info.name.trim() || !info.phone.trim() || lines.length === 0) return;
+    if (orderType === "delivery" && !info.address.trim()) return;
+    const url = whatsappOrderUrl(lines, { ...info, orderType });
     setConfirmed(true);
     setTimeout(() => {
       window.open(url, "_blank");
@@ -97,14 +107,27 @@ export default function CartDrawer() {
 
             {lines.length > 0 && (
               <div className="border-t border-border/50 p-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Subtotal</span>
-                  <span className="font-display text-2xl text-gradient-gold">{currency(total)}</span>
+                <OrderTypeToggle value={orderType} onChange={setOrderType} />
+
+                <div className="space-y-1.5 text-sm">
+                  <Row label="Subtotal" value={currency(total)} />
+                  <Row
+                    label={orderType === "pickup" ? "Pickup" : "Delivery"}
+                    value={fee === 0 ? "FREE" : currency(fee)}
+                    accent={fee === 0}
+                  />
+                  <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                    <span className="text-sm text-muted-foreground">Total</span>
+                    <span className="font-display text-2xl text-gradient-gold">{currency(grandTotal)}</span>
+                  </div>
                 </div>
-                <div className="text-xs text-muted-foreground flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                  Delivery in 30–45 min • Free above ₹400
+
+                <div className="text-xs text-muted-foreground">
+                  {orderType === "pickup"
+                    ? `Ready in 20–30 min • Pickup from ${RESTAURANT.address}`
+                    : `Delivery in 30–45 min • Free above ${currency(FREE_DELIVERY_ABOVE)} • ${currency(DELIVERY_FEE)} otherwise`}
                 </div>
+
                 <button
                   onClick={() => setCheckout(true)}
                   className="w-full h-13 py-4 rounded-full gradient-gold text-primary-foreground font-semibold hover-lift shadow-glow inline-flex items-center justify-center gap-2"
@@ -117,9 +140,21 @@ export default function CartDrawer() {
           </>
         ) : (
           <form onSubmit={submit} className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
+            <OrderTypeToggle value={orderType} onChange={setOrderType} />
+
             <Field label="Full Name" required value={info.name} onChange={(v) => setInfo({ ...info, name: v })} placeholder="John Doe" />
             <Field label="Phone Number" required type="tel" value={info.phone} onChange={(v) => setInfo({ ...info, phone: v })} placeholder="9876543210" />
-            <Field label="Delivery Address" required value={info.address} onChange={(v) => setInfo({ ...info, address: v })} placeholder="House no, street, area" textarea />
+
+            {orderType === "delivery" ? (
+              <Field label="Delivery Address" required value={info.address} onChange={(v) => setInfo({ ...info, address: v })} placeholder="House no, street, area, landmark" textarea />
+            ) : (
+              <div className="glass rounded-2xl p-4 text-sm">
+                <div className="text-[11px] uppercase tracking-[0.2em] text-gold-soft">Pickup From</div>
+                <div className="mt-1 font-medium">{RESTAURANT.name}</div>
+                <div className="text-muted-foreground">{RESTAURANT.address}, {RESTAURANT.city}</div>
+              </div>
+            )}
+
             <Field label="Note (optional)" value={info.note ?? ""} onChange={(v) => setInfo({ ...info, note: v })} placeholder="Less spicy, no onion, ring bell..." textarea />
 
             <div className="glass rounded-2xl p-4 text-sm space-y-1">
@@ -129,9 +164,13 @@ export default function CartDrawer() {
                   <span>{currency(l.qty * l.item.price)}</span>
                 </div>
               ))}
-              <div className="border-t border-border/60 pt-2 mt-2 flex justify-between font-display text-lg">
-                <span>Total</span>
-                <span className="text-gradient-gold">{currency(total)}</span>
+              <div className="border-t border-border/60 pt-2 mt-2 space-y-1">
+                <Row label="Subtotal" value={currency(total)} muted />
+                <Row label={orderType === "pickup" ? "Pickup" : "Delivery"} value={fee === 0 ? "FREE" : currency(fee)} muted accent={fee === 0} />
+                <div className="flex justify-between font-display text-lg pt-1">
+                  <span>Total</span>
+                  <span className="text-gradient-gold">{currency(grandTotal)}</span>
+                </div>
               </div>
             </div>
 
@@ -139,7 +178,7 @@ export default function CartDrawer() {
               <button type="button" onClick={() => setCheckout(false)} className="flex-1 h-12 rounded-full glass hover-lift text-sm">Back</button>
               <button type="submit" className="flex-[2] h-12 rounded-full gradient-gold text-primary-foreground font-semibold hover-lift shadow-glow inline-flex items-center justify-center gap-2">
                 <MessageCircle className="h-5 w-5" />
-                Place Order on WhatsApp
+                {orderType === "pickup" ? "Place Pickup Order" : "Place Delivery Order"}
               </button>
             </div>
             <p className="text-[11px] text-muted-foreground text-center pt-1">
@@ -149,6 +188,49 @@ export default function CartDrawer() {
         )}
       </aside>
     </>
+  );
+}
+
+function OrderTypeToggle({ value, onChange }: { value: OrderType; onChange: (v: OrderType) => void }) {
+  const opts: { v: OrderType; label: string; sub: string; icon: React.ReactNode }[] = [
+    { v: "delivery", label: "Delivery", sub: `${currency(DELIVERY_FEE)} • Free above ${currency(FREE_DELIVERY_ABOVE)}`, icon: <Truck className="h-4 w-4" /> },
+    { v: "pickup", label: "Pickup", sub: "FREE • Ready in 20–30 min", icon: <Store className="h-4 w-4" /> },
+  ];
+  return (
+    <div className="grid grid-cols-2 gap-2 glass rounded-2xl p-1.5">
+      {opts.map((o) => {
+        const active = value === o.v;
+        return (
+          <button
+            key={o.v}
+            type="button"
+            onClick={() => onChange(o.v)}
+            className={`rounded-xl px-3 py-2.5 text-left transition ${
+              active
+                ? "gradient-gold text-primary-foreground shadow-glow"
+                : "hover:bg-secondary/60"
+            }`}
+          >
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              {o.icon}
+              {o.label}
+            </div>
+            <div className={`text-[10px] mt-0.5 ${active ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+              {o.sub}
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function Row({ label, value, muted, accent }: { label: string; value: string; muted?: boolean; accent?: boolean }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className={muted ? "text-muted-foreground" : "text-sm text-muted-foreground"}>{label}</span>
+      <span className={accent ? "text-emerald-400 font-semibold" : "font-medium"}>{value}</span>
+    </div>
   );
 }
 

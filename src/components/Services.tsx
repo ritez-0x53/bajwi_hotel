@@ -4,10 +4,6 @@ const services = [
   { icon: Utensils, title: "Dine-In", desc: "Elegant indoor seating with warm ambient lighting." },
   { icon: Truck, title: "Home Delivery", desc: "Hot and fresh, delivered to your door." },
   { icon: Users, title: "Family Hall", desc: "Spacious private hall for family gatherings." },
-  { icon: Cake, title: "Birthday Parties", desc: "Tailor-made celebrations with custom menus." },
-  { icon: ChefHat, title: "Catering", desc: "Full-service catering for weddings & events." },
-  { icon: Trees, title: "Outdoor Seating", desc: "Open-air dining under the stars." },
-  { icon: Car, title: "Ample Parking", desc: "Secure, spacious parking for all guests." },
   { icon: Zap, title: "Fast Service", desc: "Hot food in 15 minutes — promise." },
 ];
 

@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CartProvider } from "@/lib/cart";
+import SEO from "@/components/SEO";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
-import About from "@/components/About";
 import Menu from "@/components/Menu";
 import Services from "@/components/Services";
 import Gallery from "@/components/Gallery";
@@ -19,11 +19,11 @@ export const Route = createFileRoute("/")({
 function Page() {
   return (
     <CartProvider>
+      <SEO />
       <div className="relative">
         <Navbar />
         <main>
           <Hero />
-          <About />
           <Menu />
           <Services />
           <Gallery />

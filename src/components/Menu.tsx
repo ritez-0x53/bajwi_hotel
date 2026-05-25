@@ -33,7 +33,7 @@ export default function Menu() {
           </p>
         </div>
 
-        {/* Featured carousel */}
+        {/* Featured carousel
         <div className="mt-12">
           <div className="flex items-end justify-between mb-4">
             <h3 className="font-display text-xl">Today's Specials</h3>
@@ -44,7 +44,7 @@ export default function Menu() {
               <FeaturedCard key={m.id} item={m} onAdd={() => { add(m); open(); }} />
             ))}
           </div>
-        </div>
+        </div> */}
 
         {/* Filters */}
         <div className="mt-14 flex flex-col md:flex-row md:items-center md:justify-between gap-4">

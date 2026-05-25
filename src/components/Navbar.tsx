@@ -30,7 +30,7 @@ function AronaiEdge({ side }: { side: "left" | "right" }) {
 
 const links = [
   { href: "#home", label: "Home" },
-  { href: "#about", label: "About" },
+  // { href: "#about", label: "About" },
   { href: "#menu", label: "Menu" },
   { href: "#services", label: "Services" },
   { href: "#gallery", label: "Gallery" },

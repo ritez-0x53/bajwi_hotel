@@ -24,14 +24,13 @@ export default function Hero() {
           </div>
 
           <h1 className="mt-6 font-display text-5xl sm:text-6xl lg:text-7xl leading-[1.05]">
-            Authentic Taste.
+            Authentic Taste in Kendukona, Rangiya
             <br />
             <span className="text-gradient-gold italic">Premium</span> Experience.
           </h1>
 
           <p className="mt-6 text-lg text-muted-foreground max-w-xl">
-            Where the soul of a traditional Indian dhaba meets the elegance of
-            fine dining. Crafted by master chefs, served with timeless hospitality.
+            Authentic Indian dhaba flavors with a premium dining experience in Kendukona, Rangiya. Crafted by expert chefs with timeless hospitality.
           </p>
 
           <div className="mt-9 flex flex-wrap gap-3">
@@ -48,21 +47,21 @@ export default function Hero() {
             >
               View Menu
             </a>
-            <a
+            {/* <a
               href={whatsappQuickUrl("Hello, I would like to reserve a table.")}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-2 px-7 py-4 rounded-full border border-gold/40 hover:bg-gold/10 hover-lift font-medium"
             >
               Reserve Table
-            </a>
+            </a> */}
           </div>
 
           <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-xl">
             <Stat icon={<Star className="h-4 w-4" />} label="Rating" value={`${RESTAURANT.rating} ★`} />
             <Stat icon={<Truck className="h-4 w-4" />} label="Delivery" value="Available" />
             <Stat icon={<Clock className="h-4 w-4" />} label="Open" value="Daily" />
-            <Stat icon={<Award className="h-4 w-4" />} label="Years" value="25+" />
+            <Stat icon={<Award className="h-4 w-4" />} label="Years" value="15+" />
           </div>
         </div>
       </div>
