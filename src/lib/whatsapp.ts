@@ -1,8 +1,9 @@
 import {
   RESTAURANT,
   currency,
-  DELIVERY_FEE,
-  FREE_DELIVERY_ABOVE,
+  BASE_DELIVERY_FEE,
+  BASE_DISTANCE_KM,
+  EXTRA_PER_KM,
 } from "./config";
 
 import type { CartLine } from "./cart";
@@ -21,6 +22,8 @@ export type CheckoutInfo = {
   address: string;
   note?: string;
   orderType: OrderType;
+  area?: string;
+  distanceKm?: number;
 };
 
 /* =========================
@@ -29,17 +32,27 @@ export type CheckoutInfo = {
 
 export function deliveryFeeFor(
   orderType: OrderType,
-  subtotal: number
+  distanceKm?: number
 ): number {
   if (orderType === "pickup") {
     return 0;
   }
 
-  if (subtotal >= FREE_DELIVERY_ABOVE) {
-    return 0;
+  if (
+    !distanceKm ||
+    distanceKm <= BASE_DISTANCE_KM
+  ) {
+    return BASE_DELIVERY_FEE;
   }
 
-  return DELIVERY_FEE;
+  const extraKm = Math.ceil(
+    distanceKm - BASE_DISTANCE_KM
+  );
+
+  return (
+    BASE_DELIVERY_FEE +
+    extraKm * EXTRA_PER_KM
+  );
 }
 
 /* =========================
@@ -63,7 +76,7 @@ export function buildOrderMessage(
   const deliveryFee =
     deliveryFeeFor(
       info.orderType,
-      subtotal
+      info.distanceKm
     );
 
   const total =
@@ -83,21 +96,8 @@ export function buildOrderMessage(
     })
     .join("\n");
 
-  const address =
-    info.orderType === "pickup"
-      ? "Pickup Order"
-      : info.address;
-
-  const deliveryText =
-    info.orderType === "pickup"
-      ? "Pickup: FREE"
-      : `Delivery: ${
-          deliveryFee === 0
-            ? "FREE"
-            : currency(
-                deliveryFee
-              )
-        }`;
+  const isPickup =
+    info.orderType === "pickup";
 
   return `🍜 *NEW ORDER - ${RESTAURANT.name.toUpperCase()}*
 
@@ -110,14 +110,40 @@ export function buildOrderMessage(
 👤 *Customer Details:*
 Name: ${info.name}
 Phone: ${info.phone}
-📍 Address: ${address}
+
+${
+  isPickup
+    ? `📍 Pickup: ${RESTAURANT.address}`
+    : `📍 Delivery Address: ${
+        info.address
+      }`
+}
+
+${
+  !isPickup && info.area
+    ? `🌍 Area: ${info.area}`
+    : ""
+}
+
+${
+  !isPickup &&
+  info.distanceKm
+    ? `🚚 Distance: ~${info.distanceKm} km`
+    : ""
+}
 
 🛒 *Order Items:*
 ${items}
 
 💰 *Bill Summary:*
 Subtotal: ${currency(subtotal)}
-${deliveryText}
+${
+  isPickup
+    ? "Pickup: FREE"
+    : `Delivery: ${currency(
+        deliveryFee
+      )}`
+}
 *TOTAL: ${currency(total)}*
 
 ${
@@ -137,7 +163,7 @@ function buildWhatsAppUrl(
   const encodedText =
     encodeURIComponent(text);
 
-  // Remove +, spaces, dashes etc.
+  // Remove +, spaces, dashes
   const phone =
     RESTAURANT.whatsappNumber.replace(
       /\D/g,

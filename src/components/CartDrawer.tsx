@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { X, Plus, Minus, Trash2, MessageCircle, Check, Truck, Store } from "lucide-react";
+import { X, Plus, Minus, Trash2, MessageCircle, Check, Truck, Store, MapPin } from "lucide-react";
 import { useCart } from "@/lib/cart";
-import { currency, RESTAURANT, DELIVERY_FEE, FREE_DELIVERY_ABOVE } from "@/lib/config";
+import { currency, RESTAURANT, BASE_DELIVERY_FEE, BASE_DISTANCE_KM, EXTRA_PER_KM, DELIVERY_AREAS } from "@/lib/config";
 import { whatsappOrderUrl, deliveryFeeFor, type CheckoutInfo, type OrderType } from "@/lib/whatsapp";
 
 export default function CartDrawer() {
@@ -14,21 +14,20 @@ export default function CartDrawer() {
     phone: "",
     address: "",
     note: "",
+    area: "",
+    distanceKm: undefined,
   });
 
-  const fee = deliveryFeeFor(orderType, total);
+  const fee = deliveryFeeFor(orderType, info.distanceKm);
   const grandTotal = total + fee;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!info.name.trim() || !info.phone.trim() || lines.length === 0) return;
-    if (orderType === "delivery" && !info.address.trim()) return;
+    if (orderType === "delivery" && (!info.address.trim() || !info.distanceKm)) return;
     const url = whatsappOrderUrl(lines, { ...info, orderType });
     setConfirmed(true);
-    // Direct navigation in the same user-gesture tick — avoids popup blockers
-    // and the "open in app?" permission prompt on mobile browsers.
     window.location.href = url;
-    // Clean up state shortly after (page will navigate away on most devices)
     setTimeout(() => {
       clear();
       setConfirmed(false);
@@ -112,6 +111,21 @@ export default function CartDrawer() {
               <div className="border-t border-border/50 p-5 space-y-4">
                 <OrderTypeToggle value={orderType} onChange={setOrderType} />
 
+                {orderType === "delivery" && (
+                  <div className="glass rounded-2xl p-3.5 text-xs space-y-1">
+                    <div className="flex items-center gap-1.5 text-gold-soft font-medium">
+                      <MapPin className="h-3.5 w-3.5" />
+                      Delivery Areas
+                    </div>
+                    <div className="text-muted-foreground">
+                      Available for: {DELIVERY_AREAS.join(", ")}
+                    </div>
+                    <div className="text-muted-foreground">
+                      {currency(BASE_DELIVERY_FEE)} for within {BASE_DISTANCE_KM} km • +{currency(EXTRA_PER_KM)} per extra km
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-1.5 text-sm">
                   <Row label="Subtotal" value={currency(total)} />
                   <Row
@@ -128,7 +142,7 @@ export default function CartDrawer() {
                 <div className="text-xs text-muted-foreground">
                   {orderType === "pickup"
                     ? `Ready in 20–30 min • Pickup from ${RESTAURANT.address}`
-                    : `Delivery in 30–45 min • Free above ${currency(FREE_DELIVERY_ABOVE)} • ${currency(DELIVERY_FEE)} otherwise`}
+                    : `Delivery in 30–45 min • ${currency(BASE_DELIVERY_FEE)} within ${BASE_DISTANCE_KM} km`}
                 </div>
 
                 <button
@@ -145,11 +159,57 @@ export default function CartDrawer() {
           <form onSubmit={submit} className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
             <OrderTypeToggle value={orderType} onChange={setOrderType} />
 
+            {orderType === "delivery" && (
+              <div className="glass rounded-2xl p-3.5 text-xs space-y-1">
+                <div className="flex items-center gap-1.5 text-gold-soft font-medium">
+                  <MapPin className="h-3.5 w-3.5" />
+                  Delivery Areas
+                </div>
+                <div className="text-muted-foreground">
+                  Available for: {DELIVERY_AREAS.join(", ")}
+                </div>
+                <div className="text-muted-foreground">
+                  {currency(BASE_DELIVERY_FEE)} for within {BASE_DISTANCE_KM} km • +{currency(EXTRA_PER_KM)} per extra km
+                </div>
+              </div>
+            )}
+
             <Field label="Full Name" required value={info.name} onChange={(v) => setInfo({ ...info, name: v })} placeholder="John Doe" />
             <Field label="Phone Number" required type="tel" value={info.phone} onChange={(v) => setInfo({ ...info, phone: v })} placeholder="9876543210" />
 
             {orderType === "delivery" ? (
-              <Field label="Delivery Address" required value={info.address} onChange={(v) => setInfo({ ...info, address: v })} placeholder="House no, street, area, landmark" textarea />
+              <>
+                <label className="block">
+                  <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    Area / Location<span className="text-gold ml-1">*</span>
+                  </span>
+                  <div className="mt-1.5">
+                    <select
+                      required
+                      value={info.area}
+                      onChange={(e) => setInfo({ ...info, area: e.target.value })}
+                      className="w-full glass rounded-2xl px-4 py-3 text-sm outline-none focus:border-gold/60 transition bg-transparent"
+                    >
+                      <option value="" disabled>Select your area</option>
+                      {DELIVERY_AREAS.map((a) => (
+                        <option key={a} value={a}>{a}</option>
+                      ))}
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                </label>
+                <Field
+                  label="Approximate Distance (km)"
+                  required
+                  type="number"
+                  min={1}
+                  step={0.5}
+                  value={info.distanceKm?.toString() ?? ""}
+                  onChange={(v) => setInfo({ ...info, distanceKm: v ? parseFloat(v) : undefined })}
+                  placeholder="e.g. 2.5"
+                />
+                <Field label="Delivery Address" required value={info.address} onChange={(v) => setInfo({ ...info, address: v })} placeholder="House no, street, area, landmark" textarea />
+              </>
             ) : (
               <div className="glass rounded-2xl p-4 text-sm">
                 <div className="text-[11px] uppercase tracking-[0.2em] text-gold-soft">Pickup From</div>
@@ -196,7 +256,7 @@ export default function CartDrawer() {
 
 function OrderTypeToggle({ value, onChange }: { value: OrderType; onChange: (v: OrderType) => void }) {
   const opts: { v: OrderType; label: string; sub: string; icon: React.ReactNode }[] = [
-    { v: "delivery", label: "Delivery", sub: `${currency(DELIVERY_FEE)} • Free above ${currency(FREE_DELIVERY_ABOVE)}`, icon: <Truck className="h-4 w-4" /> },
+    { v: "delivery", label: "Delivery", sub: `${currency(BASE_DELIVERY_FEE)} + per km`, icon: <Truck className="h-4 w-4" /> },
     { v: "pickup", label: "Pickup", sub: "FREE • Ready in 20–30 min", icon: <Store className="h-4 w-4" /> },
   ];
   return (
@@ -238,10 +298,10 @@ function Row({ label, value, muted, accent }: { label: string; value: string; mu
 }
 
 function Field({
-  label, value, onChange, placeholder, type = "text", required, textarea,
+  label, value, onChange, placeholder, type = "text", required, textarea, min, step,
 }: {
   label: string; value: string; onChange: (v: string) => void; placeholder?: string;
-  type?: string; required?: boolean; textarea?: boolean;
+  type?: string; required?: boolean; textarea?: boolean; min?: number | string; step?: number | string;
 }) {
   const cls = "w-full glass rounded-2xl px-4 py-3 text-sm outline-none focus:border-gold/60 transition";
   return (
@@ -253,7 +313,7 @@ function Field({
         {textarea ? (
           <textarea required={required} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={2} className={cls} />
         ) : (
-          <input required={required} type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={cls} />
+          <input required={required} type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} min={min} step={step} className={cls} />
         )}
       </div>
     </label>

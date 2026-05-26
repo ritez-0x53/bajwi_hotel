@@ -123,7 +123,7 @@ export const MENU: MenuItem[] = [
   {
     id: "bf2",
     name: "Roti",
-    description: "Fresh tandoor-style roti served per piece.",
+    description: "Fresh Tawa-roti served per piece.",
     price: 20,
     category: "Breakfast",
     image: roti,
@@ -133,7 +133,7 @@ export const MENU: MenuItem[] = [
   {
     id: "bf3",
     name: "Roti Sabji",
-    description: "Soft rotis served with flavorful seasonal vegetable curry.",
+    description: "Soft rotis served with ghugni, aloo fry and one seasonal vegetable fry.",
     price: 60,
     category: "Breakfast",
     image: rotisabji,
@@ -143,7 +143,7 @@ export const MENU: MenuItem[] = [
   {
     id: "bf4",
     name: "Puri Sabji",
-    description: "Crispy puris paired with spicy potato sabji.",
+    description: "Crispy puris paired with ghugni, aloo fry and one seasonal vegetable fry.",
     price: 80,
     category: "Breakfast",
     image: purisabji,
@@ -383,7 +383,7 @@ export const MENU: MenuItem[] = [
   {
     id: "b4",
     name: "Pork Biryani",
-    description: "Unique Assamese-style pork biryani with bold spices.",
+    description: "Unique Bodo-style pork biryani with bold spices.",
     price: 280,
     category: "Biryani",
     image: porkbiryani,
