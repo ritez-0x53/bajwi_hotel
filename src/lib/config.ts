@@ -4,7 +4,7 @@ export const RESTAURANT = {
   shortName: "Bajwi Hotel",
   tagline: "Authentic Taste. Premium Experience.",
   // Update with the real WhatsApp number including country code (no +, no spaces)
-  whatsappNumber: "916900916043",
+  whatsappNumber: "916003777641",
   phoneDisplay: "8474823866, 9365738626",
   address: "Kendukona, Rangia",
   city: "Rangia, Kamrup, Assam 781354",
