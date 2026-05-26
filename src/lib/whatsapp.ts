@@ -17,6 +17,9 @@ export type CheckoutInfo = {
   orderType: OrderType;
 };
 
+/**
+ * Calculate delivery fee
+ */
 export function deliveryFeeFor(
   orderType: OrderType,
   subtotal: number
@@ -28,12 +31,15 @@ export function deliveryFeeFor(
   return DELIVERY_FEE;
 }
 
+/**
+ * Build WhatsApp order message
+ */
 export function buildOrderMessage(
   lines: CartLine[],
   info: CheckoutInfo
 ) {
   const subtotal = lines.reduce(
-    (a, l) => a + l.qty * l.item.price,
+    (acc, line) => acc + line.qty * line.item.price,
     0
   );
 
@@ -50,9 +56,9 @@ export function buildOrderMessage(
 
   const items = lines
     .map(
-      (l) =>
-        `• ${l.item.name} x${l.qty} - ${currency(
-          l.qty * l.item.price
+      (line) =>
+        `• ${line.item.name} x${line.qty} - ${currency(
+          line.qty * line.item.price
         )}`
     )
     .join("\n");
@@ -61,76 +67,99 @@ export function buildOrderMessage(
 
 🧾 *Order ID:* ${orderId}
 
-📅 *Time:* ${new Date().toLocaleString(
-    "en-IN"
-  )}
+📅 *Time:* ${new Date().toLocaleString("en-IN")}
 
-👤 *Customer Details:*
+👤 *Customer Details*
 Name: ${info.name}
 Phone: ${info.phone}
-📍 Address: ${
+
+📍 *${
     info.orderType === "pickup"
       ? "Pickup Order"
-      : info.address || ""
-  }
+      : "Delivery Address"
+  }*
+${
+  info.orderType === "pickup"
+    ? "Customer will pick up the order."
+    : info.address
+}
 
-🛒 *Order Items:*
+🛒 *Order Items*
 ${items}
 
-💰 *Bill Summary:*
+💰 *Bill Summary*
 Subtotal: ${currency(subtotal)}
 ${
   info.orderType === "pickup"
     ? "Pickup: FREE"
-    : `Delivery: ${
+    : `Delivery Fee: ${
         fee === 0
           ? "FREE"
           : currency(fee)
       }`
 }
-*TOTAL: ${currency(total)}*
+
+🧾 *TOTAL: ${currency(total)}*
 
 ${
   info.note
-    ? `📝 Note: ${info.note}`
+    ? `📝 *Customer Note:* ${info.note}`
     : ""
 }`;
 }
 
 /**
- * Detect mobile device
- */
-function isMobile() {
-  return /Android|iPhone|iPad|iPod/i.test(
-    navigator.userAgent
-  );
-}
-
-/**
- * Open WhatsApp app directly on mobile
+ * Universal WhatsApp link
+ * Works on Android, iPhone, Desktop
  */
 function buildWhatsAppLink(text: string) {
   const encoded = encodeURIComponent(text);
-  const number = RESTAURANT.whatsappNumber;
 
-  // if (isMobile()) {
-  //   return `whatsapp://send?phone=${number}&text=${encoded}`;
-  // }
+  // Remove +, spaces, dashes etc.
+  const number =
+    RESTAURANT.whatsappNumber.replace(
+      /\D/g,
+      ""
+    );
 
   return `https://wa.me/${number}?text=${encoded}`;
 }
 
+/**
+ * Full order WhatsApp URL
+ */
 export function whatsappOrderUrl(
   lines: CartLine[],
   info: CheckoutInfo
 ) {
-  const text = buildOrderMessage(lines, info);
+  const text = buildOrderMessage(
+    lines,
+    info
+  );
 
   return buildWhatsAppLink(text);
 }
 
+/**
+ * Quick WhatsApp message URL
+ */
 export function whatsappQuickUrl(
   text = "Hello, I would like to know more."
 ) {
   return buildWhatsAppLink(text);
+}
+
+/**
+ * Redirect directly to WhatsApp
+ */
+export function sendOrderToWhatsApp(
+  lines: CartLine[],
+  info: CheckoutInfo
+) {
+  const url = whatsappOrderUrl(
+    lines,
+    info
+  );
+
+  window.location.href = url;
 }
