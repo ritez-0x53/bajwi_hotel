@@ -7,7 +7,9 @@ import {
 
 import type { CartLine } from "./cart";
 
-export type OrderType = "delivery" | "pickup";
+export type OrderType =
+  | "delivery"
+  | "pickup";
 
 export type CheckoutInfo = {
   name: string;
@@ -24,22 +26,27 @@ export function deliveryFeeFor(
   orderType: OrderType,
   subtotal: number
 ) {
-  if (orderType === "pickup") return 0;
+  if (orderType === "pickup") {
+    return 0;
+  }
 
-  if (subtotal >= FREE_DELIVERY_ABOVE) return 0;
+  if (subtotal >= FREE_DELIVERY_ABOVE) {
+    return 0;
+  }
 
   return DELIVERY_FEE;
 }
 
 /**
- * Build WhatsApp order message
+ * Build order message
  */
 export function buildOrderMessage(
   lines: CartLine[],
   info: CheckoutInfo
 ) {
   const subtotal = lines.reduce(
-    (acc, line) => acc + line.qty * line.item.price,
+    (acc, line) =>
+      acc + line.qty * line.item.price,
     0
   );
 
@@ -57,7 +64,9 @@ export function buildOrderMessage(
   const items = lines
     .map(
       (line) =>
-        `• ${line.item.name} x${line.qty} - ${currency(
+        `• ${line.item.name} x${
+          line.qty
+        } - ${currency(
           line.qty * line.item.price
         )}`
     )
@@ -67,7 +76,9 @@ export function buildOrderMessage(
 
 🧾 *Order ID:* ${orderId}
 
-📅 *Time:* ${new Date().toLocaleString("en-IN")}
+📅 *Time:* ${new Date().toLocaleString(
+    "en-IN"
+  )}
 
 👤 *Customer Details*
 Name: ${info.name}
@@ -109,24 +120,29 @@ ${
 }
 
 /**
- * Universal WhatsApp link
- * Works on Android, iPhone, Desktop
+ * Build WhatsApp app + web links
  */
-function buildWhatsAppLink(text: string) {
-  const encoded = encodeURIComponent(text);
+function buildWhatsAppLinks(
+  text: string
+) {
+  const encoded =
+    encodeURIComponent(text);
 
-  // Remove +, spaces, dashes etc.
+  // remove + spaces dashes etc.
   const number =
     RESTAURANT.whatsappNumber.replace(
       /\D/g,
       ""
     );
 
-  return `https://wa.me/${number}?text=${encoded}`;
+  return {
+    app: `whatsapp://send?phone=${number}&text=${encoded}`,
+    web: `https://wa.me/${number}?text=${encoded}`,
+  };
 }
 
 /**
- * Full order WhatsApp URL
+ * Get WhatsApp URL
  */
 export function whatsappOrderUrl(
   lines: CartLine[],
@@ -137,29 +153,41 @@ export function whatsappOrderUrl(
     info
   );
 
-  return buildWhatsAppLink(text);
+  return buildWhatsAppLinks(text)
+    .web;
 }
 
 /**
- * Quick WhatsApp message URL
+ * Quick message URL
  */
 export function whatsappQuickUrl(
   text = "Hello, I would like to know more."
 ) {
-  return buildWhatsAppLink(text);
+  return buildWhatsAppLinks(text)
+    .web;
 }
 
 /**
- * Redirect directly to WhatsApp
+ * Open WhatsApp directly
  */
 export function sendOrderToWhatsApp(
   lines: CartLine[],
   info: CheckoutInfo
 ) {
-  const url = whatsappOrderUrl(
+  const text = buildOrderMessage(
     lines,
     info
   );
 
-  window.location.href = url;
+  const links =
+    buildWhatsAppLinks(text);
+
+  // Try opening WhatsApp app
+  window.location.href = links.app;
+
+  // Fallback to browser/web
+  setTimeout(() => {
+    window.location.href =
+      links.web;
+  }, 1500);
 }
