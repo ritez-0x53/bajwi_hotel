@@ -25,13 +25,16 @@ export default function CartDrawer() {
     if (orderType === "delivery" && !info.address.trim()) return;
     const url = whatsappOrderUrl(lines, { ...info, orderType });
     setConfirmed(true);
+    // Direct navigation in the same user-gesture tick — avoids popup blockers
+    // and the "open in app?" permission prompt on mobile browsers.
+    window.location.href = url;
+    // Clean up state shortly after (page will navigate away on most devices)
     setTimeout(() => {
-      window.open(url, "_blank");
       clear();
       setConfirmed(false);
       setCheckout(false);
       close();
-    }, 1100);
+    }, 1500);
   };
 
   return (

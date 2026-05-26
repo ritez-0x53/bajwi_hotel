@@ -19,13 +19,14 @@ export type CheckoutInfo = {
   orderType: OrderType;
 };
 
-/**
- * Calculate delivery fee
- */
+/* =========================
+   DELIVERY FEE
+========================= */
+
 export function deliveryFeeFor(
   orderType: OrderType,
   subtotal: number
-): number {
+) {
   if (orderType === "pickup") {
     return 0;
   }
@@ -37,13 +38,14 @@ export function deliveryFeeFor(
   return DELIVERY_FEE;
 }
 
-/**
- * Build order message
- */
+/* =========================
+   ORDER MESSAGE
+========================= */
+
 export function buildOrderMessage(
   lines: CartLine[],
   info: CheckoutInfo
-): string {
+) {
   const subtotal = lines.reduce(
     (acc, line) =>
       acc + line.qty * line.item.price,
@@ -57,125 +59,115 @@ export function buildOrderMessage(
 
   const total = subtotal + fee;
 
-  const orderId = `BH-${Date.now()
-    .toString()
-    .slice(-6)}`;
+  const isPickup =
+    info.orderType === "pickup";
 
   const items = lines
     .map(
       (line) =>
-        `• ${line.item.name} x${line.qty} - ${currency(
+        `${line.qty}x ${
+          line.item.name
+        } - ${currency(
           line.qty * line.item.price
         )}`
     )
     .join("\n");
 
-  return `🍜 *NEW ORDER - ${RESTAURANT.name.toUpperCase()}*
+  return [
+    `🍜 Hello ${RESTAURANT.name},`,
 
-🧾 *Order ID:* ${orderId}
+    `I would like to place a ${
+      isPickup
+        ? "PICKUP"
+        : "DELIVERY"
+    } order:`,
 
-📅 *Time:* ${new Date().toLocaleString(
-    "en-IN"
-  )}
+    ``,
 
-👤 *Customer Details*
-Name: ${info.name}
-Phone: ${info.phone}
+    `🛒 Order Items`,
+    items,
 
-📍 *${
-    info.orderType === "pickup"
-      ? "Pickup Order"
-      : "Delivery Address"
-  }*
-${
-  info.orderType === "pickup"
-    ? "Customer will pick up the order."
-    : info.address
+    ``,
+
+    `💰 Bill Summary`,
+    `Subtotal: ${currency(
+      subtotal
+    )}`,
+
+    isPickup
+      ? `Pickup: FREE`
+      : `Delivery Fee: ${
+          fee === 0
+            ? "FREE"
+            : currency(fee)
+        }`,
+
+    `Total: ${currency(total)}`,
+
+    ``,
+
+    `👤 Customer Details`,
+    `Name: ${info.name}`,
+    `Phone: ${info.phone}`,
+
+    isPickup
+      ? `Pickup From: ${RESTAURANT.address}`
+      : `Delivery Address: ${info.address}`,
+
+    info.note
+      ? `Note: ${info.note}`
+      : "",
+
+    ``,
+
+    `Please confirm my order.`,
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
-🛒 *Order Items*
-${items}
+/* =========================
+   WHATSAPP URL
+========================= */
 
-💰 *Bill Summary*
-Subtotal: ${currency(subtotal)}
-${
-  info.orderType === "pickup"
-    ? "Pickup: FREE"
-    : `Delivery Fee: ${
-        fee === 0
-          ? "FREE"
-          : currency(fee)
-      }`
-}
-
-🧾 *TOTAL: ${currency(total)}*
-
-${
-  info.note
-    ? `📝 *Customer Note:* ${info.note}`
-    : ""
-}`;
-}
-
-/**
- * Build WhatsApp URL
- */
 function buildWhatsAppUrl(
   text: string
-): string {
+) {
   const encoded =
     encodeURIComponent(text);
 
+  // remove spaces, +, dashes
   const number =
     RESTAURANT.whatsappNumber.replace(
       /\D/g,
       ""
     );
 
-  return `https://wa.me/${number}?text=${encoded}`;
+  return `https://api.whatsapp.com/send?phone=${number}&text=${encoded}`;
 }
 
-/**
- * Get WhatsApp order URL
- */
+/* =========================
+   ORDER URL
+========================= */
+
 export function whatsappOrderUrl(
   lines: CartLine[],
   info: CheckoutInfo
-): string {
-  const text = buildOrderMessage(
-    lines,
-    info
+) {
+  return buildWhatsAppUrl(
+    buildOrderMessage(
+      lines,
+      info
+    )
   );
-
-  return buildWhatsAppUrl(text);
 }
 
-/**
- * Quick WhatsApp message URL
- */
+/* =========================
+   QUICK CHAT URL
+========================= */
+
 export function whatsappQuickUrl(
   text = "Hello, I would like to know more."
-): string {
+) {
   return buildWhatsAppUrl(text);
-}
-
-/**
- * Open WhatsApp
- */
-export function sendOrderToWhatsApp(
-  lines: CartLine[],
-  info: CheckoutInfo
-): void {
-  const text = buildOrderMessage(
-    lines,
-    info
-  );
-
-  const whatsappUrl =
-    buildWhatsAppUrl(text);
-
-  window.open(
-    whatsappUrl,
-    "_blank"
-  );
 }
