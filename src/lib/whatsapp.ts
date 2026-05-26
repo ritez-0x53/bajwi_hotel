@@ -113,9 +113,9 @@ function buildWhatsAppLink(text: string) {
   const encoded = encodeURIComponent(text);
   const number = RESTAURANT.whatsappNumber;
 
-  if (isMobile()) {
-    return `whatsapp://send?phone=${number}&text=${encoded}`;
-  }
+  // if (isMobile()) {
+  //   return `whatsapp://send?phone=${number}&text=${encoded}`;
+  // }
 
   return `https://wa.me/${number}?text=${encoded}`;
 }
