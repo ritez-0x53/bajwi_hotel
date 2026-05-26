@@ -97,21 +97,40 @@ ${
 }`;
 }
 
+/**
+ * Detect mobile device
+ */
+function isMobile() {
+  return /Android|iPhone|iPad|iPod/i.test(
+    navigator.userAgent
+  );
+}
+
+/**
+ * Open WhatsApp app directly on mobile
+ */
+function buildWhatsAppLink(text: string) {
+  const encoded = encodeURIComponent(text);
+  const number = RESTAURANT.whatsappNumber;
+
+  if (isMobile()) {
+    return `whatsapp://send?phone=${number}&text=${encoded}`;
+  }
+
+  return `https://wa.me/${number}?text=${encoded}`;
+}
+
 export function whatsappOrderUrl(
   lines: CartLine[],
   info: CheckoutInfo
 ) {
-  const text = encodeURIComponent(
-    buildOrderMessage(lines, info)
-  );
+  const text = buildOrderMessage(lines, info);
 
-  return `https://wa.me/${RESTAURANT.whatsappNumber}?text=${text}`;
+  return buildWhatsAppLink(text);
 }
 
 export function whatsappQuickUrl(
   text = "Hello, I would like to know more."
 ) {
-  return `https://wa.me/${RESTAURANT.whatsappNumber}?text=${encodeURIComponent(
-    text
-  )}`;
+  return buildWhatsAppLink(text);
 }
