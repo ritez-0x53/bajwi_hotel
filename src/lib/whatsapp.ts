@@ -25,7 +25,7 @@ export type CheckoutInfo = {
 export function deliveryFeeFor(
   orderType: OrderType,
   subtotal: number
-) {
+): number {
   if (orderType === "pickup") {
     return 0;
   }
@@ -43,7 +43,7 @@ export function deliveryFeeFor(
 export function buildOrderMessage(
   lines: CartLine[],
   info: CheckoutInfo
-) {
+): string {
   const subtotal = lines.reduce(
     (acc, line) =>
       acc + line.qty * line.item.price,
@@ -64,9 +64,7 @@ export function buildOrderMessage(
   const items = lines
     .map(
       (line) =>
-        `• ${line.item.name} x${
-          line.qty
-        } - ${currency(
+        `• ${line.item.name} x${line.qty} - ${currency(
           line.qty * line.item.price
         )}`
     )
@@ -120,74 +118,64 @@ ${
 }
 
 /**
- * Build WhatsApp app + web links
+ * Build WhatsApp URL
  */
-function buildWhatsAppLinks(
+function buildWhatsAppUrl(
   text: string
-) {
+): string {
   const encoded =
     encodeURIComponent(text);
 
-  // remove + spaces dashes etc.
   const number =
     RESTAURANT.whatsappNumber.replace(
       /\D/g,
       ""
     );
 
-  return {
-    app: `whatsapp://send?phone=${number}&text=${encoded}`,
-    web: `https://wa.me/${number}?text=${encoded}`,
-  };
+  return `https://wa.me/${number}?text=${encoded}`;
 }
 
 /**
- * Get WhatsApp URL
+ * Get WhatsApp order URL
  */
 export function whatsappOrderUrl(
   lines: CartLine[],
   info: CheckoutInfo
-) {
+): string {
   const text = buildOrderMessage(
     lines,
     info
   );
 
-  return buildWhatsAppLinks(text)
-    .web;
+  return buildWhatsAppUrl(text);
 }
 
 /**
- * Quick message URL
+ * Quick WhatsApp message URL
  */
 export function whatsappQuickUrl(
   text = "Hello, I would like to know more."
-) {
-  return buildWhatsAppLinks(text)
-    .web;
+): string {
+  return buildWhatsAppUrl(text);
 }
 
 /**
- * Open WhatsApp directly
+ * Open WhatsApp
  */
 export function sendOrderToWhatsApp(
   lines: CartLine[],
   info: CheckoutInfo
-) {
+): void {
   const text = buildOrderMessage(
     lines,
     info
   );
 
-  const links =
-    buildWhatsAppLinks(text);
+  const whatsappUrl =
+    buildWhatsAppUrl(text);
 
-  // Try opening WhatsApp app
-  window.location.href = links.app;
-
-  // Fallback to browser/web
-  setTimeout(() => {
-    window.location.href =
-      links.web;
-  }, 1500);
+  window.open(
+    whatsappUrl,
+    "_blank"
+  );
 }
