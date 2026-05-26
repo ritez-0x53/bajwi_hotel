@@ -7,6 +7,10 @@ import {
 
 import type { CartLine } from "./cart";
 
+/* =========================
+   TYPES
+========================= */
+
 export type OrderType =
   | "delivery"
   | "pickup";
@@ -26,7 +30,7 @@ export type CheckoutInfo = {
 export function deliveryFeeFor(
   orderType: OrderType,
   subtotal: number
-) {
+): number {
   if (orderType === "pickup") {
     return 0;
   }
@@ -45,85 +49,82 @@ export function deliveryFeeFor(
 export function buildOrderMessage(
   lines: CartLine[],
   info: CheckoutInfo
-) {
+): string {
   const subtotal = lines.reduce(
-    (acc, line) =>
-      acc + line.qty * line.item.price,
+    (total, line) => {
+      return (
+        total +
+        line.qty * line.item.price
+      );
+    },
     0
   );
 
-  const fee = deliveryFeeFor(
-    info.orderType,
-    subtotal
-  );
+  const deliveryFee =
+    deliveryFeeFor(
+      info.orderType,
+      subtotal
+    );
 
-  const total = subtotal + fee;
+  const total =
+    subtotal + deliveryFee;
 
-  const isPickup =
-    info.orderType === "pickup";
+  const orderId = `BH-${Date.now()
+    .toString()
+    .slice(-6)}`;
 
   const items = lines
-    .map(
-      (line) =>
-        `${line.qty}x ${
-          line.item.name
-        } - ${currency(
-          line.qty * line.item.price
-        )}`
-    )
+    .map((line) => {
+      return `• ${
+        line.item.name
+      } x${line.qty} - ${currency(
+        line.qty * line.item.price
+      )}`;
+    })
     .join("\n");
 
-  return [
-    `🍜 Hello ${RESTAURANT.name},`,
+  const address =
+    info.orderType === "pickup"
+      ? "Pickup Order"
+      : info.address;
 
-    `I would like to place a ${
-      isPickup
-        ? "PICKUP"
-        : "DELIVERY"
-    } order:`,
-
-    ``,
-
-    `🛒 Order Items`,
-    items,
-
-    ``,
-
-    `💰 Bill Summary`,
-    `Subtotal: ${currency(
-      subtotal
-    )}`,
-
-    isPickup
-      ? `Pickup: FREE`
-      : `Delivery Fee: ${
-          fee === 0
+  const deliveryText =
+    info.orderType === "pickup"
+      ? "Pickup: FREE"
+      : `Delivery: ${
+          deliveryFee === 0
             ? "FREE"
-            : currency(fee)
-        }`,
+            : currency(
+                deliveryFee
+              )
+        }`;
 
-    `Total: ${currency(total)}`,
+  return `🍜 *NEW ORDER - ${RESTAURANT.name.toUpperCase()}*
 
-    ``,
+🧾 *Order ID:* ${orderId}
 
-    `👤 Customer Details`,
-    `Name: ${info.name}`,
-    `Phone: ${info.phone}`,
+📅 *Time:* ${new Date().toLocaleString(
+    "en-IN"
+  )}
 
-    isPickup
-      ? `Pickup From: ${RESTAURANT.address}`
-      : `Delivery Address: ${info.address}`,
+👤 *Customer Details:*
+Name: ${info.name}
+Phone: ${info.phone}
+📍 Address: ${address}
 
-    info.note
-      ? `Note: ${info.note}`
-      : "",
+🛒 *Order Items:*
+${items}
 
-    ``,
+💰 *Bill Summary:*
+Subtotal: ${currency(subtotal)}
+${deliveryText}
+*TOTAL: ${currency(total)}*
 
-    `Please confirm my order.`,
-  ]
-    .filter(Boolean)
-    .join("\n");
+${
+  info.note?.trim()
+    ? `📝 *Note:* ${info.note}`
+    : ""
+}`;
 }
 
 /* =========================
@@ -132,18 +133,18 @@ export function buildOrderMessage(
 
 function buildWhatsAppUrl(
   text: string
-) {
-  const encoded =
+): string {
+  const encodedText =
     encodeURIComponent(text);
 
-  // remove spaces, +, dashes
-  const number =
+  // Remove +, spaces, dashes etc.
+  const phone =
     RESTAURANT.whatsappNumber.replace(
       /\D/g,
       ""
     );
 
-  return `https://api.whatsapp.com/send?phone=${number}&text=${encoded}`;
+  return `https://api.whatsapp.com/send?phone=${phone}&text=${encodedText}`;
 }
 
 /* =========================
@@ -153,12 +154,15 @@ function buildWhatsAppUrl(
 export function whatsappOrderUrl(
   lines: CartLine[],
   info: CheckoutInfo
-) {
-  return buildWhatsAppUrl(
+): string {
+  const message =
     buildOrderMessage(
       lines,
       info
-    )
+    );
+
+  return buildWhatsAppUrl(
+    message
   );
 }
 
@@ -168,6 +172,6 @@ export function whatsappOrderUrl(
 
 export function whatsappQuickUrl(
   text = "Hello, I would like to know more."
-) {
+): string {
   return buildWhatsAppUrl(text);
 }
